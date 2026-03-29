@@ -1,0 +1,108 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Base user profile for both parents and tutors",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "name": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["parent", "tutor", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "phoneNumber": { "type": "string" },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "TutorProfile": {
+      "title": "Tutor Profile",
+      "description": "Detailed profile for tutors",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "subjects": { "type": "array", "items": { "type": "string" } },
+        "classes": { "type": "array", "items": { "type": "string" } },
+        "pricing": { "type": "number", "description": "Hourly rate" },
+        "bio": { "type": "string" },
+        "qualification": { "type": "string" },
+        "experience": { "type": "number" },
+        "isVerified": { "type": "boolean" },
+        "isTopTutor": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "address": { "type": "string" },
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "demoVideoUrl": { "type": "string" },
+        "idProofUrl": { "type": "string" },
+        "qualificationProofUrl": { "type": "string" }
+      },
+      "required": ["uid", "subjects", "classes", "pricing"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "A request from a parent to a tutor",
+      "type": "object",
+      "properties": {
+        "parentId": { "type": "string" },
+        "tutorId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["parentId", "tutorId", "status"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Rating and feedback for a tutor",
+      "type": "object",
+      "properties": {
+        "parentId": { "type": "string" },
+        "tutorId": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["parentId", "tutorId", "rating"]
+    },
+    "Bookmark": {
+      "title": "Bookmark",
+      "description": "A tutor saved by a parent",
+      "type": "object",
+      "properties": {
+        "parentId": { "type": "string" },
+        "tutorId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["parentId", "tutorId"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/tutors/{uid}": {
+      "schema": "TutorProfile",
+      "description": "Tutor-specific profile data"
+    },
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Inquiries and demo requests"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Tutor reviews"
+    },
+    "/bookmarks/{bookmarkId}": {
+      "schema": "Bookmark",
+      "description": "Parent bookmarks"
+    }
+  }
+}

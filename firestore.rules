@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Document ID: uid
+    // Fields: uid, name, email, role, createdAt, phoneNumber, photoURL
+    //
+    // Collection: tutors
+    // Document ID: uid
+    // Fields: uid, subjects, classes, pricing, bio, qualification, experience, isVerified, isTopTutor, rating, reviewCount, location, demoVideoUrl, idProofUrl, qualificationProofUrl
+    //
+    // Collection: leads
+    // Document ID: auto-generated
+    // Fields: parentId, tutorId, status, message, createdAt
+    //
+    // Collection: reviews
+    // Document ID: auto-generated
+    // Fields: parentId, tutorId, rating, comment, createdAt
+    //
+    // Collection: bookmarks
+    // Document ID: auto-generated
+    // Fields: parentId, tutorId, createdAt
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "amfmm3@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidUser(data) {
+      return data.uid is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['parent', 'tutor', 'admin'];
+    }
+
+    function isValidTutorProfile(data) {
+      return data.uid is string &&
+             data.subjects is list &&
+             data.classes is list &&
+             data.pricing is number && data.pricing >= 0;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role != 'admin' || isAdmin());
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /tutors/{userId} {
+      allow read: if true; // Public profiles
+      allow create: if isAuthenticated() && isOwner(userId) && isValidTutorProfile(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin()) && isValidTutorProfile(request.resource.data);
+    }
+
+    match /leads/{leadId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.parentId || request.auth.uid == resource.data.tutorId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.parentId;
+      allow update: if isAuthenticated() && (request.auth.uid == resource.data.tutorId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.parentId;
+      allow update: if isAuthenticated() && (request.auth.uid == resource.data.parentId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /bookmarks/{bookmarkId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.parentId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.parentId;
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.parentId || isAdmin());
+    }
+  }
+}

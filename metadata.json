@@ -1,0 +1,5 @@
+{
+  "name": "PadhAi",
+  "description": "A two-sided marketplace connecting parents with verified home tutors.",
+  "requestFramePermissions": ["geolocation"]
+}
